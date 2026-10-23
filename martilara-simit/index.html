@@ -433,8 +433,30 @@ function throwSimit(vx, vy) {
   return true;
 }
 
+// Elden ekranın görünen alt kenarına kadar olan mesafe (mantıksal piksel).
+function roomBelowHand(w, h) {
+  const s = Math.min(w / VW, h / VH);
+  const oy = (h - VH * s) / 2;
+  return (h - oy) / s - HAND.y;
+}
+// 390×844 portrede tam aşağı çekiş. Masaüstünde oyun yüksekliğe sığar,
+// el neredeyse alt kenardadır; aynı jest çok kısa kalır. Çarpan o jesti
+// bu çekişe uzatır. Telefon bu ölçüde olduğundan çarpan 1'dir, hissi değişmez.
+const REF_PULL = roomBelowHand(390, 844);
+
+function pullScale() {
+  const w = view.w || 1, h = view.h || 1;
+  // Telefonda oyun genişliğe sığar; alttaki boşluk çekişi zaten uzatır.
+  // Yalnızca yüksekliğe sığan görünümde (masaüstü) aynı jesti telefona eşitle.
+  if (h / VH > w / VW) return 1;
+  const room = roomBelowHand(w, h);
+  if (!(room > 1) || room >= REF_PULL) return 1;
+  return REF_PULL / room;
+}
+
 function dragVelocity(d) {
-  const dx = d.x0 - d.x, dy = d.y0 - d.y;
+  const scale = pullScale();
+  const dx = (d.x0 - d.x) * scale, dy = (d.y0 - d.y) * scale;
   let vx = dx * PULL_K, vy = dy * PULL_K;
   const sp = Math.hypot(vx, vy);
   if (sp > MAX_SPEED) { vx *= MAX_SPEED / sp; vy *= MAX_SPEED / sp; }
@@ -524,21 +546,25 @@ canvas.addEventListener('pointerdown', e => {
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
   G.drag = { x0: p.x, y0: p.y, x: p.x, y: p.y };
 });
-canvas.addEventListener('pointermove', e => {
+// Pencere dinleyicisi + pointer capture: imleç tuvalden veya pencereden
+// çıksa da çekiş sürer, bırakınca atış yapılır.
+function onPointerMove(e) {
   if (e.pointerId !== activePointer || !G.drag) return;
   const p = toLogical(e.clientX, e.clientY);
   G.drag.x = p.x; G.drag.y = p.y;
-});
+}
 function release(e, cancel) {
   if (e.pointerId !== activePointer) return;
   activePointer = null;
+  try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
   const d = G.drag; G.drag = null;
   if (!d || cancel || G.mode !== 'play') return;
   const v = dragVelocity(d);
   if (v.pull >= MIN_PULL && v.vy < 0) throwSimit(v.vx, v.vy);
 }
-canvas.addEventListener('pointerup', e => release(e, false));
-canvas.addEventListener('pointercancel', e => release(e, true));
+window.addEventListener('pointermove', onPointerMove, true);
+window.addEventListener('pointerup', e => release(e, false), true);
+window.addEventListener('pointercancel', e => release(e, true), true);
 window.addEventListener('keydown', e => {
   if ((e.code === 'Space' || e.code === 'Escape' || e.code === 'KeyP') && (G.mode === 'play' || G.mode === 'pause')) {
     e.preventDefault(); G.mode = G.mode === 'play' ? 'pause' : 'play'; G.drag = null;
@@ -855,7 +881,8 @@ function drawHand() {
   let ox = 0, oy = 0;
   if (G.drag && G.mode === 'play') {
     const dx = G.drag.x - G.drag.x0, dy = G.drag.y - G.drag.y0, d = Math.hypot(dx, dy) || 1;
-    const m = Math.min(d, 260) / 260 * 55;
+    const eff = d * pullScale();
+    const m = Math.min(eff, 260) / 260 * 55;
     ox = dx / d * m; oy = dy / d * m;
   } else if (G.handCooldown > 0) oy = -G.handCooldown * 60;
   const x = HAND.x + ox, y = HAND.y + oy;
