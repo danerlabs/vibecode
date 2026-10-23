@@ -1068,16 +1068,11 @@ function lit(on, x, y, n) {
 function drawEminonu(ink) {
   const on = palette().lights > 0.4;
   ctx.fillStyle = ink.mid;
-  for (let k = 0; k < 8; k++) ctx.fillRect(8 + k * 22, HORIZON - 28 - (k % 3) * 8, 16, 40);
-  const cx = 150, by = HORIZON - 36;
-  ctx.fillRect(cx - 70, by - 6, 140, 18);
-  dome(cx, by - 6, 36, 26);
-  dome(cx - 28, by - 2, 16, 12); dome(cx + 28, by - 2, 16, 12);
-  minaret(cx - 78, by + 10, 78); minaret(cx + 78, by + 10, 78);
-  lit(on, cx - 20, by - 4, 6);
-  drawGalata(ink, 330, 0.72);
-  drawHaydarpasa(ink, 455, HORIZON);
-  lit(on, 400, HORIZON - 40, 8);
+  for (let k = 0; k < 3; k++) ctx.fillRect(6 + k * 18, HORIZON - 22 - (k % 2) * 8, 14, 32);
+  drawSuleymaniye(ink, 198);
+  drawGalata(ink, 348, 0.68);
+  drawHaydarpasa(ink, 466, HORIZON);
+  if (on) lit(true, 424, HORIZON - 36, 6);
 }
 function drawKarakoy(ink) {
   const on = palette().lights > 0.4;
@@ -1103,14 +1098,12 @@ function drawBesiktas(ink) {
   ctx.fillRect(16, HORIZON - 34, 200, 34);
   ctx.fillRect(70, HORIZON - 58, 90, 24);
   for (let k = 0; k < 10; k++) ctx.fillRect(28 + k * 18, HORIZON - 48, 8, 22);
-  lit(on, 30, HORIZON - 28, 12);
-  ctx.fillRect(96, HORIZON - 78, 36, 20);
-  dome(114, HORIZON - 58, 22, 16);
-  const mx = 300, by = HORIZON - 8;
+  lit(on, 30, HORIZON - 28, 10);
   ctx.fillStyle = ink.mid;
-  ctx.fillRect(mx - 34, by - 16, 68, 16);
-  dome(mx, by - 16, 28, 22);
-  minaret(mx - 48, by, 92); minaret(mx + 48, by, 92);
+  ctx.fillRect(104, HORIZON - 76, 18, 42);
+  ctx.beginPath();
+  ctx.moveTo(102, HORIZON - 76); ctx.lineTo(113, HORIZON - 94); ctx.lineTo(124, HORIZON - 76); ctx.fill();
+  drawOrtakoy(ink, 312);
   ctx.fillStyle = ink.far;
   ctx.fillRect(470, HORIZON - 78, 8, 78); ctx.fillRect(520, HORIZON - 64, 7, 64);
   ctx.strokeStyle = ink.far; ctx.lineWidth = 1.2;
@@ -1136,11 +1129,97 @@ function drawHaydarpasa(ink, x, base) {
   ctx.fillStyle = ink.light;
   ctx.fillRect(x - 62, base - 48, 8, 10); ctx.fillRect(x + 52, base - 48, 8, 10);
 }
-function dome(x, y, rx, ry) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, Math.PI, 0); ctx.fill(); }
-function minaret(x, base, h) {
-  ctx.fillRect(x - 3, base - h, 6, h);
-  ctx.fillRect(x - 5, base - h * 0.72, 10, 3);
-  ctx.beginPath(); ctx.moveTo(x - 4, base - h); ctx.lineTo(x, base - h - 16); ctx.lineTo(x + 4, base - h); ctx.fill();
+function dome(x, y, rx, ry) {
+  ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, Math.PI, 0); ctx.fill();
+}
+function minaret(x, base, h, balconies) {
+  const n = balconies || 1;
+  const w = Math.max(3.2, h * 0.024);
+  ctx.fillStyle = skyInk().mid;
+  ctx.fillRect(x - w * 0.5, base - h, w, h);
+  ctx.fillRect(x - w, base - Math.max(3.2, h * 0.032), w * 2, Math.max(3.2, h * 0.032));
+  for (let i = 1; i <= n; i++) {
+    const t = n === 1 ? 0.68 : 0.5 + (i - 1) * (0.34 / (n - 1));
+    const y = base - h * t;
+    const bw = Math.max(12, w * 3.5);
+    const bh = Math.max(3.4, h * 0.024);
+    ctx.fillRect(x - bw / 2, y, bw, bh);
+    ctx.beginPath();
+    ctx.moveTo(x - bw * 0.34, y + bh);
+    ctx.lineTo(x, y + bh + 3.4);
+    ctx.lineTo(x + bw * 0.34, y + bh);
+    ctx.fill();
+  }
+  const cap = Math.max(13, h * 0.13);
+  ctx.beginPath();
+  ctx.moveTo(x - w * 1.2, base - h);
+  ctx.lineTo(x, base - h - cap);
+  ctx.lineTo(x + w * 1.2, base - h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillRect(x - 0.8, base - h - cap - 7, 1.6, 7);
+}
+function drawSuleymaniye(ink, cx) {
+  const base = HORIZON - 26;
+  const pod = base - 15;
+  const semiY = base - 40;
+  const spring = base - 66;
+  const on = palette().lights > 0.4;
+  ctx.fillStyle = ink.far;
+  ctx.beginPath();
+  ctx.moveTo(cx - 148, HORIZON + 2);
+  ctx.quadraticCurveTo(cx - 80, base + 8, cx, base + 1);
+  ctx.quadraticCurveTo(cx + 88, base + 12, cx + 158, HORIZON + 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = ink.mid;
+  ctx.fillRect(cx - 86, pod, 172, base - pod + 3);
+  dome(cx - 72, pod, 9, 6);
+  dome(cx + 72, pod, 9, 6);
+  dome(cx - 56, pod - 1, 10, 7);
+  dome(cx + 56, pod - 1, 10, 7);
+  dome(cx - 34, semiY, 16, 12);
+  dome(cx + 34, semiY, 16, 12);
+  ctx.fillRect(cx - 46, semiY, 92, pod - semiY);
+  ctx.fillRect(cx - 22, spring, 44, semiY - spring);
+  dome(cx, spring, 32, 26);
+  ctx.beginPath(); ctx.arc(cx, spring - 31, 2.4, 0, 7); ctx.fill();
+  ctx.fillRect(cx - 0.75, spring - 28, 1.5, 4);
+  minaret(cx - 106, base, 138, 3);
+  minaret(cx + 106, base, 134, 3);
+  minaret(cx - 66, base - 1, 110, 2);
+  minaret(cx + 66, base - 1, 108, 2);
+  if (on) {
+    ctx.fillStyle = ink.light;
+    for (let i = -1; i <= 1; i++) ctx.fillRect(cx + i * 8 - 1.4, spring + 7, 3, 5);
+    for (let i = 0; i < 4; i++) ctx.fillRect(cx - 34 + i * 20, base - 11, 3.5, 5);
+  }
+}
+function drawOrtakoy(ink, cx) {
+  const base = HORIZON + 1;
+  const on = palette().lights > 0.4;
+  ctx.fillStyle = ink.mid;
+  ctx.fillRect(cx - 64, base - 7, 128, 8);
+  ctx.fillRect(cx - 38, base - 34, 76, 27);
+  ctx.fillRect(cx - 42, base - 38, 84, 6);
+  ctx.fillRect(cx - 17, base - 52, 34, 16);
+  dome(cx, base - 50, 22, 18);
+  ctx.beginPath(); ctx.arc(cx, base - 71, 2, 0, 7); ctx.fill();
+  ctx.fillRect(cx - 0.7, base - 71, 1.4, 4);
+  minaret(cx - 52, base, 118, 1);
+  minaret(cx + 52, base, 118, 1);
+  if (on) {
+    ctx.fillStyle = ink.light;
+    for (let i = 0; i < 4; i++) ctx.fillRect(cx - 28 + i * 16, base - 28, 5, 11);
+    for (let i = 0; i < 3; i++) ctx.fillRect(cx - 9 + i * 8, base - 48, 3, 5);
+  }
+}
+function leadColor() {
+  const id = palette().id;
+  if (id === 'gece') return '#e4eaf6';
+  if (id === 'ogle') return '#93a2b2';
+  if (id === 'sabah') return '#8794a4';
+  return '#6f645c';
 }
 
 function drawSea() {
@@ -1167,20 +1246,62 @@ function drawSea() {
     ctx.stroke();
   }
   const route = (G && G.route) || 0;
-  if (route === 2) drawKizKulesi(500, 568, 0.55);
-  else drawKizKulesi(route === 1 ? 392 : 78, route === 1 ? 600 : 588, 1);
+  if (route === 2) drawKizKulesi(498, 572, 0.58);
+  else drawKizKulesi(route === 1 ? 400 : 68, route === 1 ? 604 : 592, 1);
+}
+function kizBody(live) {
+  const ink = skyInk();
+  const id = palette().id;
+  const stone = live ? ink.mid : (id === 'gece' ? '#8ea0c0' : id === 'ogle' ? '#1e4a68' : id === 'sabah' ? '#3a304c' : '#351c3a');
+  const lead = live ? leadColor() : (id === 'gece' ? '#c5d0e6' : '#5e6e80');
+  ctx.fillStyle = stone;
+  ctx.beginPath(); ctx.ellipse(0, 3, 34, 7.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-30, 3); ctx.lineTo(-24, -6); ctx.lineTo(22, -6); ctx.lineTo(28, 4); ctx.closePath(); ctx.fill();
+  ctx.fillRect(-30, -26, 16, 20);
+  ctx.fillRect(-20, -46, 40, 40);
+  ctx.fillRect(-22, -50, 44, 6);
+  for (let i = 0; i < 4; i++) ctx.fillRect(-18 + i * 10, -54, 6, 5);
+  ctx.fillRect(-6, -96, 12, 48);
+  ctx.fillRect(-10, -102, 20, 8);
+  ctx.fillStyle = lead;
+  ctx.beginPath();
+  ctx.moveTo(-11, -100); ctx.lineTo(0, -126); ctx.lineTo(11, -100); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = stone;
+  ctx.fillRect(-0.7, -134, 1.4, 9);
+  if (!live) return;
+  const night = id === 'gece';
+  const dusk = palette().lights > 0.4;
+  if (night || dusk) {
+    ctx.fillStyle = night ? '#ffe082' : '#ffd58a';
+    ctx.fillRect(-6, -99, 3, 4);
+    ctx.fillRect(-1, -99, 3, 4);
+    ctx.fillRect(4, -99, 3, 4);
+    ctx.fillRect(-12, -36, 3, 5);
+    ctx.fillRect(6, -34, 3, 5);
+    if (night) {
+      ctx.fillStyle = 'rgba(255,214,120,0.38)';
+      ctx.beginPath(); ctx.arc(0, -96, 11, 0, 7); ctx.fill();
+    }
+  }
 }
 function drawKizKulesi(kx, ky, sc) {
-  ctx.save(); ctx.translate(kx, ky); ctx.scale(sc, sc);
-  ctx.fillStyle = skyInk().mid;
-  ctx.beginPath(); ctx.ellipse(0, 6, 46, 8, 0, 0, 7); ctx.fill();
-  ctx.fillRect(-34, -18, 52, 20);
-  ctx.fillRect(8, -54, 16, 42);
-  ctx.beginPath(); ctx.moveTo(6, -54); ctx.lineTo(16, -76); ctx.lineTo(26, -54); ctx.fill();
-  ctx.fillRect(15, -84, 2, 10);
-  const on = palette().id === 'gece' || Math.sin(T * 3) > 0;
-  ctx.fillStyle = on ? '#ffe082' : '#ffb300';
-  ctx.beginPath(); ctx.arc(16, -40, 2.6, 0, 7); ctx.fill();
+  ctx.save();
+  ctx.translate(kx, ky);
+  ctx.scale(sc, sc);
+  const night = palette().id === 'gece';
+  for (let i = 0; i < 4; i++) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-44, 12 + i * 16, 88, 11);
+    ctx.clip();
+    ctx.globalAlpha = (night ? 0.92 : 0.82) * (1 - i * 0.14);
+    ctx.translate(Math.sin(T * 1.35 + i) * 1.3, 14);
+    ctx.scale(1, -0.55);
+    kizBody(false);
+    ctx.restore();
+  }
+  kizBody(true);
   ctx.restore();
 }
 
