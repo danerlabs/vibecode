@@ -133,6 +133,48 @@ function saveDaily(date, score) {
   return score > prev;
 }
 function routeOf(g) { return ROUTES[(g && g.route) || 0] || ROUTES[0]; }
+
+const MISSIONS = [
+  { id: 'altin', name: 'Altın avcısı', text: 'Bir turda 3 altın martı yakala', test: g => g.goldCaught >= 3 },
+  { id: 'patron', name: 'Patronun dostu', text: 'Patron martıyı doyur', test: g => !!g.patronFed },
+  { id: 'combo', name: 'Onlu kombo', text: "10'lu kombo yap", test: g => g.bestCombo >= 10 },
+  { id: 'gece', name: 'Gece seferi', text: 'Gece turunda 500 puan al', test: g => !!(g.cond && g.cond.time === 3 && g.score >= 500) },
+  { id: 'temiz', name: 'Temiz atış', text: 'Hiç yolcunun kafasına düşürmeden tur bitir', test: g => g.hitsOnPeople === 0 && g.thrown >= 5 },
+  { id: 'sis', name: 'Sis kaptanı', text: 'Sisli havada 8 martı doyur', test: g => g.fog > 0 && g.fed >= 8 },
+  { id: 'ruzgar', name: 'Rüzgarlı tur', text: 'Rüzgarlı turda 300 puan al', test: g => Math.abs(g.wind || 0) >= 20 && g.score >= 300 },
+  { id: 'besiktas', name: 'Boğaz hattı', text: 'Beşiktaş hattında 250 puan al', test: g => g.route === 2 && g.score >= 250 },
+  { id: 'fotograf', name: 'Foto bombası', text: 'Turistin fotoğrafına gir', test: g => g.photoBombs >= 1 },
+  { id: 'simitci', name: 'Amcanın ikramı', text: 'Simitçi amcaya isabet et', test: g => g.vendorHits >= 1 },
+  { id: 'hirsiz', name: 'Hırsız kovucu', text: 'Simit hırsızını yakala', test: g => g.thieves >= 1 },
+  { id: 'gunun', name: 'Günün kaptanı', text: 'Günün turunu tamamla', test: g => !!(g.daily && g.thrown >= 3) },
+];
+let badgeIds = null;
+function earnedIds() {
+  if (badgeIds) return badgeIds;
+  try {
+    const raw = JSON.parse(store('simit_badges') || '[]');
+    badgeIds = Array.isArray(raw) ? raw.filter(id => typeof id === 'string') : [];
+  } catch (e) { badgeIds = []; }
+  return badgeIds;
+}
+function saveBadgeIds(ids) {
+  badgeIds = ids;
+  store('simit_badges', JSON.stringify(ids));
+}
+function hasBadge(id) { return earnedIds().indexOf(id) >= 0; }
+function badgeCount() { return earnedIds().length; }
+function reloadBadges() { badgeIds = null; return earnedIds(); }
+function awardBadges() {
+  const have = earnedIds();
+  const fresh = [];
+  MISSIONS.forEach(m => {
+    if (have.indexOf(m.id) >= 0 || !m.test(G)) return;
+    have.push(m.id);
+    fresh.push(m);
+  });
+  if (fresh.length) saveBadgeIds(have);
+  return fresh;
+}
 function palette() {
   const i = G && G.cond ? G.cond.time : 2;
   return TIMES[i] || TIMES[2];
@@ -276,6 +318,7 @@ function newGame() {
     wind: cond.wind || 0, fog: cond.fog || 0,
     shareNote: '', justUnlocked: false, record: false, dailyRecord: false,
     prevBest: 0, dailyBest: 0,
+    goldCaught: 0, patronFed: false, photoBombs: 0, vendorHits: 0, thieves: 0, newBadges: [],
   };
 }
 
@@ -481,7 +524,7 @@ function feedGull(g) {
   if (G.combo >= 3 && G.combo % 3 === 0) addFloat(VW / 2, 330, G.combo + ' KOMBO!', '#ffeb3b', 44);
   if (Math.random() < 0.45 || g.kind === 'gold') addBubble(g.x, g.y - 34, pick(LINES_FED));
   for (let k = 0; k < (g.kind === 'gold' ? 26 : 14); k++) G.crumbs.push(crumb(g.x, g.y, 1, g.kind === 'gold'));
-  if (g.kind === 'gold') { Sound.gold(); G.shake = 6; } else Sound.catch(G.combo);
+  if (g.kind === 'gold') { G.goldCaught++; Sound.gold(); G.shake = 6; } else Sound.catch(G.combo);
   if (G.vendor && G.vendor.shout > 0) {
     G.score += 30;
     G.vendor.shout = 0.4;
@@ -511,6 +554,7 @@ function feedPatron(g) {
   G.combo++;
   G.bestCombo = Math.max(G.bestCombo, G.combo);
   G.fed++;
+  G.patronFed = true;
   G.score += 120;
   g.state = 'fed'; g.carrying = true;
   g.vx = (g.x < VW / 2 ? -1 : 1) * 160; g.vy = -200; g.flapSpeed = 16;
@@ -522,6 +566,7 @@ function feedPatron(g) {
 
 function hitThief(g) {
   G.score += 20;
+  G.thieves++;
   g.state = 'flee'; g.vx = (g.x < VW / 2 ? -1 : 1) * 260; g.vy = -300; g.flapSpeed = 22;
   addFloat(g.x, g.y - 30, 'Hırsızı kovaladın! +20', '#b9f6ca', 22);
   addBubble(g.x, g.y - 40, pick(LINES_THIEF_HIT), '#fff3e0');
@@ -542,6 +587,7 @@ function landOnPassenger(p, s) {
   if (p.role === 'tourist') {
     p.hit = 0.5;
     G.score += 20;
+    G.photoBombs++;
     addFloat(p.x, PASSENGER_HEAD_Y - 60, 'Foto bombası! +20', '#b3e5fc', 22);
     addBubble(p.x, PASSENGER_HEAD_Y - 30, pick(['Objektife girdin!', 'Bir selfie daha!', 'Işık tam yerinde!']), '#e3f2fd', true);
     Sound.yum();
@@ -561,6 +607,7 @@ function landOnPassenger(p, s) {
 function landOnVendor(s) {
   for (let k = 0; k < 8; k++) G.crumbs.push(crumb(s.x, s.y, 1));
   G.score += 10;
+  G.vendorHits++;
   G.vendor.shout = 2.2;
   addFloat(G.vendor.x, PASSENGER_HEAD_Y - 64, 'Amcaya isabet! +10', '#ffe082', 20);
   addBubble(G.vendor.x, PASSENGER_HEAD_Y - 30, 'Kendi malıma mı atıyorsun?', '#fff8e1', true, 2);
@@ -756,6 +803,7 @@ function endGame() {
     G.justUnlocked = unlocked() > before;
   }
   G.drag = null;
+  G.newBadges = awardBadges();
   Sound.horn();
 }
 
@@ -890,8 +938,17 @@ function hitRect(p, r) { return p.x >= r.x - 6 && p.x <= r.x + r.w + 6 && p.y >=
 function startLayout() {
   const h = 770, y = (VH - h) / 2;
   const buttons = ROUTES.map((r, i) => ({ id: 'route', route: i, x: 58, y: y + 150 + i * 88, w: VW - 116, h: 78 }));
-  buttons.push({ id: 'daily', x: 58, y: y + 150 + 3 * 88 + 10, w: VW - 116, h: 124 });
+  const daily = { id: 'daily', x: 58, y: y + 424, w: VW - 116, h: 124 };
+  buttons.push(daily);
+  buttons.push({ id: 'gorev', x: 58, y: daily.y + daily.h + 14, w: VW - 116, h: 78 });
   return { y, h, buttons };
+}
+function badgesLayout() {
+  const h = 892, y = Math.round((VH - h) / 2), rowH = 56;
+  return {
+    y, h, listTop: y + 102, rowH,
+    back: { x: 58, y: y + h - 70, w: VW - 116, h: 52 },
+  };
 }
 function endLayout() {
   const h = 612, y = (VH - h) / 2;
@@ -911,10 +968,15 @@ canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
   const p = toLogical(e.clientX, e.clientY);
   Sound.init();
+  if (G.mode === 'badges') {
+    if (hitRect(p, badgesLayout().back)) G.mode = 'start';
+    return;
+  }
   if (G.mode === 'start') {
     const b = startLayout().buttons.find(r => hitRect(p, r));
     if (!b) return;
-    if (b.id === 'daily') startRoute(0, true);
+    if (b.id === 'gorev') G.mode = 'badges';
+    else if (b.id === 'daily') startRoute(0, true);
     else startRoute(b.route, false);
     return;
   }
@@ -1009,6 +1071,7 @@ function render() {
   drawHud();
   ctx.translate(0, -hudDy);
   if (G.mode === 'start') drawStartCard();
+  if (G.mode === 'badges') drawBadges();
   if (G.mode === 'pause') drawPauseCard();
   if (G.mode === 'end') drawEndCard();
 }
@@ -1587,7 +1650,7 @@ function drawBubble(b) {
 }
 
 function drawHud() {
-  if (G.mode === 'start') return;
+  if (G.mode === 'start' || G.mode === 'badges') return;
   ctx.save();
   ctx.fillStyle = '#00000040'; roundRect(10, 12, 150, 38, 12); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.font = '800 20px system-ui, sans-serif'; ctx.textAlign = 'left';
@@ -1629,14 +1692,14 @@ function fitText(t, x, y, size, col, weight, maxW) {
   ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.fillText(t, x, y);
 }
 function uiButton(b, label, sub, kind) {
-  const locked = kind === 'locked', primary = kind === 'primary', daily = kind === 'daily';
-  ctx.fillStyle = locked ? '#efe6da' : primary ? '#c62828' : daily ? '#e65100' : '#fffaf3';
+  const locked = kind === 'locked', primary = kind === 'primary', daily = kind === 'daily', badge = kind === 'badge';
+  ctx.fillStyle = locked ? '#efe6da' : primary ? '#c62828' : daily ? '#e65100' : badge ? '#fff3d0' : '#fffaf3';
   roundRect(b.x, b.y, b.w, b.h, 18); ctx.fill();
   ctx.lineWidth = 3;
-  ctx.strokeStyle = locked ? '#d9cbb8' : primary ? '#7f1212' : daily ? '#bf360c' : '#efd3b0';
+  ctx.strokeStyle = locked ? '#d9cbb8' : primary ? '#7f1212' : daily ? '#bf360c' : badge ? '#e0b44a' : '#efd3b0';
   roundRect(b.x, b.y, b.w, b.h, 18); ctx.stroke();
-  const col = locked ? '#9a8878' : (primary || daily) ? '#fff' : '#2b1d4e';
-  const subCol = locked ? '#9a8878' : (primary || daily) ? '#ffe0b2' : '#6d4c41';
+  const col = locked ? '#9a8878' : (primary || daily) ? '#fff' : badge ? '#6d4c00' : '#2b1d4e';
+  const subCol = locked ? '#9a8878' : (primary || daily) ? '#ffe0b2' : badge ? '#8d6e00' : '#6d4c41';
   fitText(label, b.x + b.w / 2, b.y + (sub ? 34 : b.h / 2 + 8), 22, col, 800, b.w - 24);
   if (sub) fitText(sub, b.x + b.w / 2, b.y + 58, 15, subCol, 600, b.w - 24);
 }
@@ -1649,6 +1712,10 @@ function drawStartCard() {
   const open = unlocked();
   const best = bestScore();
   L.buttons.forEach(b => {
+    if (b.id === 'gorev') {
+      uiButton(b, 'Görevler', badgeCount() + ' / ' + MISSIONS.length + ' rozet', 'badge');
+      return;
+    }
     if (b.id === 'daily') {
       const day = rollDay(dateKey());
       const R = ROUTES[day.route];
@@ -1692,11 +1759,98 @@ function drawEndCard() {
   if (G.justUnlocked) textAt('Yeni hat açıldı: ' + ROUTES[Math.min(ROUTES.length - 1, G.route + 1)].name, VW / 2, y + 286, 16, '#e65100', 800);
   else textAt('Kombo x' + G.bestCombo + '   ·   atılan ' + G.thrown, VW / 2, y + 286, 15, '#6d4c41', 600);
   textAt(windWord(G.wind) + (G.fog ? ' · sis' : ''), VW / 2, y + 316, 14, '#8d6e63', 600);
+  const nb = G.newBadges || [];
+  if (nb.length) {
+    textAt('Rozet kazandın!', VW / 2, y + 344, 18, '#e65100', 900);
+    const shown = nb.slice(0, 4);
+    const span = 34;
+    const x0 = VW / 2 - (shown.length - 1) * span / 2;
+    shown.forEach((m, i) => drawBadgeIcon(m.id, x0 + i * span, y + 370, true));
+    const label = nb.length === 1 ? nb[0].name
+      : nb.length === 2 ? nb[0].name + '  ·  ' + nb[1].name
+      : nb[0].name + '  ·  ' + nb[1].name + '  +' + (nb.length - 2);
+    fitText(label, VW / 2, y + 398, 15, '#6d4c00', 800, VW - 150);
+  }
   uiButton(L.buttons[0], 'Paylaş', null, 'primary');
   uiButton(L.buttons[1], 'Tekrar', null, 'plain');
   uiButton(L.buttons[2], 'Menü', null, 'plain');
   if (G.shareNote) fitText(G.shareNote, VW / 2, y + L.h - 28, 14, '#2e7d32', 700, VW - 120);
   else fitText(GAME_URL.replace('https://', ''), VW / 2, y + L.h - 28, 14, '#8d6e63', 600, VW - 120);
+}
+
+function drawBadgeIcon(id, x, y, on) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = on ? '#f6c445' : '#e6dccb';
+  ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = on ? '#a67c00' : '#c9bba6'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = on ? '#6d4c00' : '#9a8b78';
+  ctx.strokeStyle = on ? '#6d4c00' : '#9a8b78';
+  ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (id === 'altin') {
+    ctx.beginPath();
+    for (let k = 0; k < 5; k++) {
+      const a = -Math.PI / 2 + k * Math.PI * 2 / 5;
+      const b = a + Math.PI / 5;
+      k ? ctx.lineTo(Math.cos(a) * 7, Math.sin(a) * 7) : ctx.moveTo(Math.cos(a) * 7, Math.sin(a) * 7);
+      ctx.lineTo(Math.cos(b) * 3, Math.sin(b) * 3);
+    }
+    ctx.closePath(); ctx.fill();
+  } else if (id === 'patron') {
+    ctx.beginPath(); ctx.ellipse(-3, 1, 5, 3.2, -0.4, 0, 7); ctx.ellipse(3, 1, 5, 3.2, 0.4, 0, 7); ctx.fill();
+  } else if (id === 'combo') {
+    ctx.font = '800 9px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('10', 0, 3.5);
+  } else if (id === 'gece') {
+    ctx.beginPath(); ctx.arc(-1, 0, 5.5, 0, 7); ctx.fill();
+    ctx.fillStyle = on ? '#f6c445' : '#e6dccb';
+    ctx.beginPath(); ctx.arc(2, -1, 4.6, 0, 7); ctx.fill();
+  } else if (id === 'temiz') {
+    ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-1, 4); ctx.lineTo(6, -4); ctx.stroke();
+  } else if (id === 'sis') {
+    ctx.beginPath(); ctx.arc(-4, 1, 2.3, 0, 7); ctx.arc(0, -1, 2.8, 0, 7); ctx.arc(4, 1, 2.2, 0, 7); ctx.fill();
+  } else if (id === 'ruzgar') {
+    ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(5, 0); ctx.moveTo(2, -3); ctx.lineTo(6, 0); ctx.lineTo(2, 3); ctx.stroke();
+  } else if (id === 'besiktas') {
+    ctx.fillRect(-5, -2, 2, 8); ctx.fillRect(3, -6, 2, 12); ctx.beginPath(); ctx.arc(0, 1, 3, Math.PI, 0); ctx.fill();
+  } else if (id === 'fotograf') {
+    ctx.strokeRect(-5, -3, 10, 7); ctx.beginPath(); ctx.arc(0, 0.5, 2, 0, 7); ctx.stroke();
+  } else if (id === 'simitci') {
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, 7); ctx.stroke();
+  } else if (id === 'hirsiz') {
+    ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('!', 0, 4);
+  } else {
+    ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawBadges() {
+  const L = badgesLayout();
+  const y = card(L.h);
+  const n = badgeCount();
+  textAt('Görevler', VW / 2, y + 46, 32, '#c62828', 900);
+  textAt(n + ' / ' + MISSIONS.length + ' rozet', VW / 2, y + 78, 16, '#6d4c41', 700);
+  MISSIONS.forEach((m, i) => {
+    const on = hasBadge(m.id);
+    const ry = L.listTop + i * L.rowH;
+    ctx.fillStyle = on ? '#fff6dc' : '#f6f0e6';
+    roundRect(64, ry, VW - 128, L.rowH - 6, 12); ctx.fill();
+    drawBadgeIcon(m.id, 92, ry + (L.rowH - 6) / 2, on);
+    ctx.textAlign = 'left';
+    ctx.font = '700 14px system-ui, sans-serif';
+    let size = 14;
+    const maxW = VW - 250;
+    while (size > 11 && ctx.measureText(m.text).width > maxW) {
+      size -= 1;
+      ctx.font = '700 ' + size + 'px system-ui, sans-serif';
+    }
+    ctx.fillStyle = '#2b1d4e';
+    ctx.fillText(m.text, 116, ry + 29);
+    ctx.textAlign = 'right';
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillStyle = on ? '#2e7d32' : '#a89880';
+    ctx.fillText(on ? 'Açık' : 'Kilitli', VW - 78, ry + 29);
+  });
+  uiButton(L.back, 'Geri', null, 'plain');
 }
 
 function roundRect(x, y, w, h, r) {
@@ -1719,7 +1873,7 @@ function frame(now) {
   T += dt;
   if (meta.noteT > 0) meta.noteT -= dt;
   if (!G.manual) step(dt);
-  if (G.mode === 'start' || G.mode === 'end') {
+  if (G.mode === 'start' || G.mode === 'end' || G.mode === 'badges') {
     G.gulls.forEach(g => updateGull(g, dt));
     G.gulls = G.gulls.filter(g => !g.gone);
     if (G.gulls.length < 3) addGull('normal');
@@ -1741,6 +1895,7 @@ window.sg = {
   get view() { return view; },
   HAND, GRAVITY, MAX_SPEED, PULL_K, ROUND, ROUTES, TIMES, GAME_URL,
   rollDay, dateKey, shareScore, prepareShare, unlocked, windWord,
+  MISSIONS, awardBadges, hasBadge, badgeCount, reloadBadges, earnedIds,
 };
 </script>
 </body>
