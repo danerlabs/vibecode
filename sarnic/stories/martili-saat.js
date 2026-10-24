@@ -1,9 +1,9 @@
 'use strict';
 
 /*
- * Bu haftanın hikâyesi. Yeni hafta için bu dosyayı kopyalama:
- * sarnic/stories/ altına yeni bir dosya koy ve index.html'e bir script satırı ekle.
- * Ayrıntı README'de, «Sarnıç'a hikâye eklemek».
+ * Bu haftanın hikâyesi. Sahne resimleri, gelince:
+ * sarnic/stories/martili-saat/img/<sahne>.webp ve cover.webp
+ * Dosya yoksa sayfa kâğıtta kalır. Ayrıntı README'de.
  */
 Sarnic.story({
   id: 'martili-saat',
@@ -11,53 +11,9 @@ Sarnic.story({
   title: 'Martılı Saat (Kış 1955)',
   blurb: 'Galata Köprüsü\'nün altında bir gümüş saat, kırmızı eldiven ve dokuza kadar süren bir kış gecesi.',
   start: 'restoran',
-  cover: 'restaurant',
-  illustrations: {
-    restaurant(d) {
-      d.rain();
-      d.fill(c => c.rect(0, 52, d.w, 128));
-      d.cut(c => {
-        c.moveTo(72, 180);
-        c.quadraticCurveTo(186, 90, 300, 180);
-        c.closePath();
-      });
-      d.cut(c => {
-        c.moveTo(340, 180);
-        c.quadraticCurveTo(454, 90, 568, 180);
-        c.closePath();
-      });
-      d.band(198);
-      d.watch(180, 232, 0.58);
-    },
-    door(d) {
-      d.stamp('door');
-      const ctx = d.ctx;
-      ctx.save();
-      ctx.translate(492, 168);
-      ctx.fillStyle = d.red;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 26, 34, 0.15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(20, -18, 11, 16, 0.6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    },
-    eye(d) {
-      d.fill(c => {
-        c.moveTo(150, 146);
-        c.quadraticCurveTo(320, 62, 490, 146);
-        c.quadraticCurveTo(320, 230, 150, 146);
-        c.closePath();
-      });
-      d.cut(c => c.arc(320, 146, 34, 0, Math.PI * 2));
-      d.fill(c => c.arc(328, 146, 14, 0, Math.PI * 2));
-    },
-  },
   scenes: {
     restoran: {
       title: 'Galataaltı',
-      ill: 'restaurant',
       sound: 'room',
       text: 'Kış 1955. Galata Köprüsü\'nün altında camlar buğu tutmuş. Palamut soğuyor, yağmur demire vuruyor.\n\nPeçetede bir satır var: «Saat 9\'da Pera Palas\'ın arka kapısı. Saati getir.»\n\nCebindeki gümüş köstekli saatin kapağında bir martı duruyor. Yaşlı garson çayı bırakırken eğiliyor. «Kırmızı eldivenli kadına güvenme.» Sesi, az önce mutfaktan gelen öksürüğün aynısı.',
       choices: [
@@ -68,7 +24,6 @@ Sarnic.story({
     },
     saat: {
       title: 'Köstekli saat',
-      ill: 'watch',
       sound: 'room',
       text: 'Kapağın içi buğulu. Akrep ile yelkovan dokuza yaslanmış; oysa sen kurmadın. Martının gözü minicik bir vida.\n\nGarson tezgâhın ötesinden bakmıyor gibi yapıyor. Kaşık, masada seninle aynı hızda titriyor.',
       choices: [
@@ -79,7 +34,6 @@ Sarnic.story({
     },
     yagmur: {
       title: 'Lodos',
-      ill: 'street',
       sound: 'street',
       text(s) {
         let t = '';
@@ -97,7 +51,6 @@ Sarnic.story({
     },
     pera: {
       title: 'Arka kapı',
-      ill: 'door',
       sound: 'street',
       text(s) {
         const wait = s.thoughtful ? 'Kahvede avuçların ısındı. Saat hâlâ dokuza bakıyor.\n\n' : '';
@@ -112,7 +65,6 @@ Sarnic.story({
     },
     leyla: {
       title: 'Kırmızı eldiven',
-      ill: 'gloves',
       sound: 'room',
       text: 'Leyla eldiveni çıkarmaz. «Saatleri baban öğretti. Kapağı o kazıdı. Martı onun işareti.»\n\nKemal kapının yanında, kolları bağlı. İçeriden otelin sıcaklığı vuruyor. Dışarıda yağmur, içeride babanın adı.',
       choices: [
@@ -123,7 +75,6 @@ Sarnic.story({
     },
     kemal: {
       title: 'Fötr',
-      ill: 'figure',
       sound: 'room',
       text(s) {
         const hid = s.trust === 'hid' ? 'Kör noktadan çıkman yarım saniye sürdü. Kemal senden önce görmüş.\n\n' : '';
@@ -137,7 +88,6 @@ Sarnic.story({
     },
     mektup: {
       title: 'Babanın mektubu',
-      ill: 'letter',
       sound: 'room',
       text(s) {
         let t = '';
@@ -156,7 +106,6 @@ Sarnic.story({
     },
     suphe: {
       title: 'Aynı öksürük',
-      ill: 'figure',
       sound: 'street',
       text(s) {
         let t = '';
@@ -174,7 +123,6 @@ Sarnic.story({
     },
     kopru: {
       title: 'Martı pompası',
-      ill: 'gull',
       sound: 'street',
       text(s) {
         let t = '';
@@ -198,7 +146,6 @@ Sarnic.story({
     },
     kuyu: {
       title: 'Balıkçının kuyusu',
-      ill: 'well',
       sound: 'street',
       text: 'Harita yalan söylemiyor. Pompanın bir karış altında, yosunlu taşta kuyu ağzı. Balık pulu kokusu, lokantayla aynı.\n\nMerdiven dar. Leyla eldivenini dişine takıp çıkarıyor. İlk kez çıplak el. Parmaklarında saat yağı.',
       choices: [
@@ -209,7 +156,6 @@ Sarnic.story({
     },
     gecit: {
       title: 'Şıp',
-      ill: 'passage',
       sound: 'cistern',
       text(s) {
         let open = 'Kuyu dar. Pul kokusu, lokantanın mutfağıyla aynı.';
@@ -228,7 +174,6 @@ Sarnic.story({
     },
     esik: {
       title: 'Eşik',
-      ill: 'cistern',
       sound: 'cistern',
       text(s) {
         const split = s.split
@@ -244,7 +189,6 @@ Sarnic.story({
     },
     sarnic: {
       title: 'Su saati',
-      ill: 'cistern',
       sound: 'cistern',
       text: 'Heykel taş. Gagası bir yuva, gövdesi dişli. Bunun bir saat olduğunu ancak şimdi anlıyorsun. Kanallar kaideden Eminönü\'ne doğru gidiyor.\n\nHer damla bir sütunu ayrı sayıyor. Şıp, şıp. Su, ayakkabının dikişini yokluyor. Yukarıda şehir, habersiz.',
       choices: [
@@ -255,7 +199,6 @@ Sarnic.story({
     },
     yalniz: {
       title: 'Tek başına',
-      ill: 'passage',
       sound: 'cistern',
       text: 'Leyla yukarıda ya da geride. Şıp şıp çoğalıyor, artık sağdan. Heykelin gagası karanlıkta bir yarık.\n\nTek başına hangi yöne çevrileceğini bilmiyorsun. Su yükselmiyor henüz. Yalnızca bekliyor.',
       choices: [
@@ -266,7 +209,6 @@ Sarnic.story({
     },
     riza: {
       title: 'Paltonun sahibi',
-      ill: 'figure',
       sound: 'cistern',
       text(s) {
         let t = 'Rıza suyun içinden geliyor. Palto ıslak, öksürük aynı öksürük. Garson, sahibi, ikisi de o.\n\n';
@@ -285,7 +227,6 @@ Sarnic.story({
     },
     atis: {
       title: 'Son dişli',
-      ill: 'cistern',
       sound: 'cistern',
       text(s) {
         const bluff = s.bluffReady || s.readLetter
@@ -307,7 +248,6 @@ Sarnic.story({
       endName: 'Bekçi',
       endBlurb: 'Artık bekçi sensin.',
       title: 'Bekçi',
-      ill: 'watch',
       sound: 'street',
       text: 'Leyla saati havada tutuyor. Gagaya oturtuyor, akrebi geri alıyor. Dişliler bir kez öksürür gibi yapıyor, sonra kilit. Su sütunların dibine çekiliyor.\n\nKemal merdivende. Arkasında iki polis. Rıza\'nın palto cebinden senin peçeten çıkıyor. Mektup ıslandı, işini gördü.\n\nSaatin kapağı, ıslak ışıkta, yeni bir cümle gösteriyor. Kazı yeni değilmiş: «Aferin oğlum. Artık bekçi sensin.»',
     },
@@ -316,7 +256,6 @@ Sarnic.story({
       endName: 'Tufan',
       endBlurb: 'Eminönü suyun altında.',
       title: 'Tufan',
-      ill: 'flood',
       sound: 'street',
       text: 'Akrebi ileri kaçıyor. Heykel suyu yutmak yerine kusuyor. Önce bir uğultu, sonra Eminönü\'nün altından tahta çatırtısı.\n\nLeyla «Geri!» diye bağırıyor. Geç kalıyorsun. Rıza gülmüyor. O da ıslanıyor.\n\nYukarı çıktığında köprünün altı dere olmuş. Saat sende değil. Şehir o gece balık gibi nefes alıyor.',
     },
@@ -325,7 +264,6 @@ Sarnic.story({
       endName: 'Olta',
       endBlurb: 'Saat Rıza\'da kaldı.',
       title: 'Olta',
-      ill: 'figure',
       sound: 'street',
       text: 'Rıza saati avucunda tartıyor, martıya bakıyor, gülümsüyor. «Garson bahşişi» diyor. Kapağı kapatıyor.\n\nGarson oydu, sahibi oydu. Uyarıyı da o vermişti, seni Leyla\'dan ayırmak için. Eldivenler yağmurda bir leke gibi kalıyor. Yetişemiyorlar.\n\nErtesi sabah Eminönü suskun. Saat Rıza\'da. Kanallar onun saatinde.',
     },
@@ -334,7 +272,6 @@ Sarnic.story({
       endName: 'Karanlık Su',
       endBlurb: 'Kilit yarım, su eşikte.',
       title: 'Karanlık Su',
-      ill: 'passage',
       sound: 'street',
       text: 'Karanlıkta merdiven yer değiştiriyor. Şıp şıp artık sağdan. Saati bir çıkıntıya koyuyorsun, bir daha bulamıyorsun.\n\nYukarıya vardığında şafak sökmemiş. Leyla köprüde, eldivenleri çıkmış, elleri boş. «Kilit yarım kaldı» diyor.\n\nEminönü\'de su, dükkânların eşiğini yokluyor. Taşmıyor. Çekilmiyor da.',
     },
@@ -343,7 +280,6 @@ Sarnic.story({
       endName: 'Martının Gözü',
       endBlurb: 'Dokuz, dışarıdan kilit.',
       title: 'Martının Gözü',
-      ill: 'eye',
       sound: 'street',
       text: 'Saati dokuza kurunca martının gözü ince bir kapak gibi açılıyor. İçinde babanın ikinci cümlesi, kazınmış: dışarıdan dokuz, içeriden kilit.\n\nPompa bir kez yutkunuyor. Kanallar, sarnıca inmeden, uykuya yatıyor. Rıza\'nın öksürüğü köprünün üstünde kalıyor. Aşağı inmiyorsun.\n\nLeyla yağmurun içinden geliyor. Kapağa birlikte bakıyorsunuz. Yazı orada: «Aferin oğlum. Artık bekçi sensin.» Kemal düdük çalmıyor. Bu gece polis yok. Sadece martı, sadece dokuz.',
     },

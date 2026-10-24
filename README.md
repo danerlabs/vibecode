@@ -9,7 +9,7 @@ Küçük, tek dosyalık tarayıcı oyunları. Her oyun kendi klasöründe durur 
 
 ## Sarnıç'a hikâye eklemek
 
-Görünüm ve ses ortaktır. Kâğıt dokusu, yazı, palet ve düğmeler `sarnic/index.html` içindedir. Akış, kayıt, paylaşım kartı, ses ve çizim kalemi `sarnic/engine.js` içindedir. Yeni hafta bu iki dosyaya sahne yazmaz: bir hikâye dosyası ve bir script satırı yeter.
+Görünüm ve ses ortaktır. Kâğıt, yazı, palet ve düğmeler `sarnic/index.html` içindedir. Akış, kayıt, paylaşım kartı ve ses `sarnic/engine.js` içindedir. Yeni hafta bu iki dosyaya sahne yazmaz: bir hikâye dosyası, resimler ve bir script satırı yeter.
 
 1. `sarnic/stories/` altında yeni bir dosya aç. Örnek: `kapalicarsi.js`.
 2. Dosyada aşağıdaki gibi `Sarnic.story({ ... })` çağır.
@@ -17,24 +17,9 @@ Görünüm ve ses ortaktır. Kâğıt dokusu, yazı, palet ve düğmeler `sarnic
 4. Yeni hikâyeye `current: true` yaz, bir öncekinin `current` değerini `false` yap. Birden fazlası `true` ise listedeki sonuncusu bu haftanın hikâyesidir; ötekiler «Geçmiş hikâyeler» rafına iner.
 5. Seçim sahnesinde tam üç seçenek olsun. Son sahnesinde seçenek yoktur; `ending`, `endName` ve `endBlurb` vardır. `endName` paylaşım kartında ve X metninde görünür.
 6. `sound` hazır settendir: `room` (hafif yağmur), `street` (yağmur, rüzgâr, martı, vapur düdüğü), `cistern` (şıp şıp). Ses ilk dokunuştan sonra açılır.
-7. `ill` ya motor kitaplığından bir addır ya da bu hikâyenin `illustrations` çizimidir. Aynı ad varsa hikâyedeki çizim kitaplığı ezer. Kapak için `cover` kullan; boşsa `watch` çizilir.
+7. Sahne resmi dikey bir WebP’dir, yaklaşık 1080×1920. Dosya `sarnic/stories/<hikâye-id>/img/<sahne-id>.webp`. Kapak `cover.webp`. Dosya yoksa sayfa kâğıt dokuda kalır. Resim açılınca metnin üstüne koyu sepia bir perde iner. Başka bir yol için sahneye `image: 'stories/kapalicarsi/img/avlu.webp'` yaz. Kâğıdı zorlamak için `image: false`.
 8. `when`, seçimin yapıldığı andaki bayraklara bakılır. `set` ancak koşul tutunca yazılır. Tutmazsa oyun `else` sahnesine gider ve `setElse` uygulanır.
-9. `id` yayınlandıktan sonra değişmesin. Bulunan sonlar `localStorage` anahtarı `sarnic-v1` altında bu ada yazılır.
-
-Çizimler aynı kalemi kullanır: koyu mürekkep siluet, kâğıt rengi delik, az çizgi. Yeni bir sahne resmi birkaç şekil yeter:
-
-```javascript
-bedesten(d) {
-  d.column(150, 70, 160);
-  d.column(360, 70, 160);
-  d.arch(178, 66, 182, 90);
-  d.watch(320, 200, 0.7);
-}
-```
-
-Kalemde `fill`, `cut`, `band`, `ground`, `rain`, `watch`, `gull`, `building`, `column`, `arch` ve `stamp('watch')` vardır. `stamp` kitaplıktaki silueti aynı tuvale basar. `d.ctx` durur; yeni hikâye yeni bir palet açmaz.
-
-Kitaplık adları: `watch`, `street`, `door`, `gloves`, `letter`, `well`, `passage`, `cistern`, `figure`, `flood`, `gull`.
+9. `id` yayınlandıktan sonra değişmesin. Bulunan sonlar `localStorage` anahtarı `sarnic-v1` altında bu ada yazılır. Resim klasörünün adı da bu `id` ile aynıdır.
 
 ```javascript
 Sarnic.story({
@@ -43,18 +28,9 @@ Sarnic.story({
   title: 'Kapalıçarşı',
   blurb: 'Bir cümle.',
   start: 'avlu',
-  cover: 'street',
-  illustrations: {
-    bedesten(d) {
-      d.ground(190);
-      d.column(140, 80, 140);
-      d.arch(80, 210, 480, 120);
-    },
-  },
   scenes: {
     avlu: {
       title: 'Avlu',
-      ill: 'bedesten',
       sound: 'room',
       text: 'Öğle ışığı camekânlarda. En az bir iki cümle.',
       choices: [
@@ -65,7 +41,6 @@ Sarnic.story({
     },
     esik: {
       title: 'Eşik',
-      ill: 'door',
       sound: 'room',
       text: function (s) {
         return s.sakladin ? 'Anahtar avcunda.' : 'Avuçların boş.';
@@ -78,7 +53,6 @@ Sarnic.story({
     },
     gizli: {
       title: 'Arka dükkân',
-      ill: 'bedesten',
       sound: 'room',
       text: 'Kapı ancak anahtarla açıldı.',
       choices: [
@@ -92,7 +66,6 @@ Sarnic.story({
       endName: 'Çıkış',
       endBlurb: 'Kartta görünen kısa cümle.',
       title: 'Çıkış',
-      ill: 'door',
       sound: 'street',
       text: 'Kapı çekildi.',
     },

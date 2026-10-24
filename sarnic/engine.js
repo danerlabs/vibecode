@@ -2,8 +2,8 @@
 
 /*
  * Sarnıç motoru.
- * Kâğıt, yazı, düğmeler, paylaşım kartı, ses ve çizim kalemi burada durur.
- * Haftalık hikâye bu dosyaya sahne metni koymaz; sarnic/stories/ altına eklenir.
+ * Kâğıt, yazı, düğmeler, paylaşım kartı ve ses burada durur.
+ * Sahne resmi dosyadır. Haftalık hikâye bu dosyaya sahne metni koymaz.
  * Yeni hikâye: README içindeki «Sarnıç'a hikâye eklemek».
  */
 (function (global) {
@@ -15,11 +15,9 @@
   GAME.url = 'https://danerlabs.github.io/vibecode/' + GAME.slug + '/';
 
   const STORIES = [];
-  const library = {};
 
   const INK = '#2c241c';
   const PAPER = '#f3ecdf';
-  const WASH = 'rgba(44, 36, 28, 0.08)';
   const RED = '#7a342c';
 
   function story(def) {
@@ -30,325 +28,48 @@
     STORIES.push(def);
   }
 
-  function registerIll(name, fn) {
-    library[name] = fn;
+  /* stories/<id>/img/<sahne>.webp — yoksa kâğıt. image: false kâğıdı zorlar. */
+  function imageSrc(st, sceneId, scene) {
+    if (scene && scene.image === false) return null;
+    if (scene && typeof scene.image === 'string') return scene.image;
+    if (!st || !sceneId) return null;
+    return 'stories/' + st.id + '/img/' + sceneId + '.webp';
+  }
+  function coverSrc(st) {
+    if (!st || st.image === false) return null;
+    if (typeof st.image === 'string') return st.image;
+    return 'stories/' + st.id + '/img/cover.webp';
   }
 
-  /* Kalem siluet basar: dolu mürekkep, kâğıt deliği, az çizgi. */
-  function createPen(canvas) {
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width = 640;
-    const h = canvas.height = 280;
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = PAPER;
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = INK;
-    ctx.fillStyle = INK;
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    const pen = {
-      ctx: ctx, w: w, h: h, ink: INK, paper: PAPER, wash: WASH, red: RED,
-      width(n) { ctx.lineWidth = n; return pen; },
-      inkFill(color) { ctx.fillStyle = color; return pen; },
-      fill(fn) {
-        ctx.beginPath();
-        fn(ctx);
-        ctx.fillStyle = INK;
-        ctx.fill();
-        return pen;
-      },
-      cut(fn) {
-        ctx.beginPath();
-        fn(ctx);
-        ctx.fillStyle = PAPER;
-        ctx.fill();
-        return pen;
-      },
-      band(y, alpha) {
-        ctx.fillStyle = alpha == null ? WASH : 'rgba(44, 36, 28, ' + alpha + ')';
-        ctx.fillRect(0, y, w, h - y);
-        ctx.fillStyle = INK;
-        return pen;
-      },
-      ground(y) { return pen.band(y); },
-      washRect(x, y, ww, hh) {
-        ctx.fillStyle = WASH;
-        ctx.fillRect(x, y, ww, hh);
-        ctx.fillStyle = INK;
-        return pen;
-      },
-      rect(x, y, ww, hh) { return pen.fill(c => c.rect(x, y, ww, hh)); },
-      fillRect(x, y, ww, hh) { ctx.fillStyle = INK; ctx.fillRect(x, y, ww, hh); return pen; },
-      ellipse(x, y, rx, ry, rot) {
-        return pen.fill(c => c.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2));
-      },
-      fillEllipse(x, y, rx, ry) { return pen.ellipse(x, y, rx, ry); },
-      arc(x, y, r, a0, a1) {
-        return pen.fill(c => c.arc(x, y, r, a0 == null ? 0 : a0, a1 == null ? Math.PI * 2 : a1));
-      },
-      stroke(fn) {
-        ctx.beginPath();
-        ctx.strokeStyle = INK;
-        fn(ctx);
-        ctx.stroke();
-        return pen;
-      },
-      rain() {
-        [[78, 18, 22], [150, 34, 16], [214, 12, 26], [300, 28, 14], [390, 16, 20], [470, 36, 18], [548, 14, 24]].forEach(mark => {
-          ctx.fillStyle = INK;
-          ctx.fillRect(mark[0], mark[1], 2, mark[2]);
-        });
-        return pen;
-      },
-      watch(x, y, s) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(s || 1, s || 1);
-        ctx.fillStyle = INK;
-        ctx.fillRect(-7, -62, 14, 16);
-        ctx.beginPath();
-        ctx.arc(0, 0, 48, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = PAPER;
-        ctx.beginPath();
-        ctx.arc(0, 0, 36, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = INK;
-        ctx.fillRect(-30, -3, 30, 6);
-        ctx.fillRect(-3, -30, 6, 30);
-        ctx.fillStyle = PAPER;
-        ctx.beginPath();
-        ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        ctx.fillStyle = INK;
-        return pen;
-      },
-      gull(x, y, s) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(s || 1, s || 1);
-        ctx.fillStyle = INK;
-        ctx.beginPath();
-        ctx.ellipse(-4, 6, 34, 16, -0.15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(26, -4, 13, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(36, -6);
-        ctx.lineTo(56, -2);
-        ctx.lineTo(36, 2);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(-34, 4);
-        ctx.lineTo(-56, -6);
-        ctx.lineTo(-36, 14);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(-10, 2);
-        ctx.quadraticCurveTo(0, -42, 24, -6);
-        ctx.quadraticCurveTo(2, -4, -6, 8);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-        ctx.fillStyle = INK;
-        return pen;
-      },
-      building(x, y, ww, hh) {
-        pen.fill(c => c.rect(x, y, ww, hh));
-        const win = 16;
-        if (ww > 48 && hh > 50) {
-          pen.cut(c => {
-            c.rect(x + 14, y + 18, win, 22);
-            c.rect(x + ww - 30, y + 18, win, 22);
-          });
-        }
-        return pen;
-      },
-      column(x, y, hh) {
-        pen.fill(c => c.rect(x, y, 28, hh));
-        pen.fill(c => c.rect(x - 10, y - 4, 48, 16));
-        pen.fill(c => c.rect(x - 8, y + hh - 8, 44, 14));
-        return pen;
-      },
-      arch(x, y, span, rise) {
-        return pen.fill(c => {
-          c.moveTo(x, y);
-          c.lineTo(x + span, y);
-          c.lineTo(x + span, y + 10);
-          c.quadraticCurveTo(x + span / 2, y + rise, x, y + 10);
-          c.closePath();
-        });
-      },
-      water(y) { return pen.band(y, 0.16); },
-      stamp(name) {
-        const fn = library[name];
-        if (fn) fn(pen);
-        return pen;
-      },
+  let plateToken = 0;
+  function showPlate(src) {
+    const plate = $('plate');
+    const img = $('plate-img');
+    const token = ++plateToken;
+    document.body.classList.remove('photo');
+    if (plate) plate.classList.remove('on');
+    const theme = document.querySelector('meta[name="theme-color"]');
+    if (theme) theme.content = '#e6d5b8';
+    if (!plate || !img) return;
+    img.onload = img.onerror = null;
+    if (!src) {
+      img.removeAttribute('src');
+      return;
+    }
+    const apply = (ok) => {
+      if (token !== plateToken) return;
+      plate.classList.toggle('on', ok);
+      document.body.classList.toggle('photo', ok);
+      if (theme) theme.content = ok ? '#1a120c' : '#e6d5b8';
     };
-    return pen;
+    img.onload = () => apply(img.naturalWidth > 0);
+    img.onerror = () => apply(false);
+    if (img.getAttribute('src') === src && img.complete) {
+      apply(img.naturalWidth > 0);
+      return;
+    }
+    img.src = src;
   }
-
-  function drawIll(canvas, story, kind) {
-    const pen = createPen(canvas);
-    const local = story && story.illustrations && story.illustrations[kind];
-    const fn = local || library[kind];
-    if (fn) fn(pen);
-    else pen.rect(40, 40, pen.w - 80, pen.h - 80);
-    return pen;
-  }
-
-  function skyline(d, waterY) {
-    const blocks = [[36, 100, 118], [172, 62, 146], [340, 86, 128], [488, 74, 116]];
-    blocks.forEach(block => {
-      const hh = waterY - block[1];
-      if (hh > 20) d.fill(c => c.rect(block[0], block[1], block[2], hh));
-    });
-    [124, 162].forEach(y => {
-      blocks.forEach(block => {
-        const top = block[1];
-        const ww = block[2];
-        if (y < top + 12 || y + 18 > waterY - 6) return;
-        d.cut(c => {
-          c.rect(block[0] + 18, y, 16, 18);
-          c.rect(block[0] + ww - 34, y, 16, 18);
-        });
-      });
-    });
-  }
-
-  registerIll('watch', d => {
-    d.watch(320, 148, 1.7);
-  });
-
-  registerIll('street', d => {
-    d.rain();
-    skyline(d, 214);
-    d.band(214);
-    d.gull(92, 46, 0.42);
-  });
-
-  registerIll('door', d => {
-    d.fill(c => {
-      c.moveTo(214, 252);
-      c.lineTo(214, 108);
-      c.arc(320, 108, 106, Math.PI, 0);
-      c.lineTo(426, 252);
-      c.closePath();
-    });
-    d.cut(c => {
-      c.rect(246, 132, 58, 102);
-      c.rect(336, 132, 58, 102);
-    });
-    d.cut(c => c.arc(318, 186, 6, 0, Math.PI * 2));
-  });
-
-  registerIll('gloves', d => {
-    const ctx = d.ctx;
-    ctx.save();
-    ctx.translate(320, 138);
-    ctx.fillStyle = RED;
-    ctx.beginPath();
-    ctx.moveTo(-44, 86);
-    ctx.lineTo(42, 86);
-    ctx.lineTo(36, 28);
-    ctx.quadraticCurveTo(30, -24, 6, -46);
-    ctx.quadraticCurveTo(-16, -54, -24, -28);
-    ctx.quadraticCurveTo(-34, 0, -38, 28);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(16, 4);
-    ctx.quadraticCurveTo(72, -24, 64, 28);
-    ctx.quadraticCurveTo(36, 36, 18, 16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = PAPER;
-    ctx.fillRect(-36, 58, 72, 6);
-    ctx.restore();
-  });
-
-  registerIll('letter', d => {
-    const ctx = d.ctx;
-    ctx.save();
-    ctx.translate(320, 146);
-    ctx.rotate(-0.05);
-    ctx.fillStyle = INK;
-    ctx.fillRect(-132, -86, 264, 176);
-    ctx.fillStyle = PAPER;
-    for (let i = 0; i < 4; i++) ctx.fillRect(-96, -48 + i * 26, 150, 4);
-    ctx.fillStyle = RED;
-    ctx.beginPath();
-    ctx.arc(78, 42, 16, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  });
-
-  registerIll('well', d => {
-    d.fill(c => c.ellipse(320, 156, 168, 52, 0, 0, Math.PI * 2));
-    d.cut(c => c.ellipse(320, 156, 108, 30, 0, 0, Math.PI * 2));
-  });
-
-  registerIll('passage', d => {
-    d.fill(c => {
-      c.moveTo(0, 0);
-      c.lineTo(250, 250);
-      c.lineTo(0, 280);
-      c.closePath();
-    });
-    d.fill(c => {
-      c.moveTo(640, 0);
-      c.lineTo(390, 250);
-      c.lineTo(640, 280);
-      c.closePath();
-    });
-    d.fill(c => c.arc(320, 108, 5, 0, Math.PI * 2));
-  });
-
-  registerIll('cistern', d => {
-    d.column(148, 64, 168);
-    d.column(456, 64, 168);
-    d.arch(176, 58, 280, 120);
-    d.band(208);
-    d.fill(c => c.rect(286, 188, 68, 14));
-    d.gull(292, 176, 0.48);
-  });
-
-  registerIll('figure', d => {
-    d.fill(c => {
-      c.moveTo(236, 264);
-      c.lineTo(268, 132);
-      c.lineTo(372, 132);
-      c.lineTo(404, 264);
-      c.closePath();
-    });
-    d.fill(c => c.arc(320, 112, 28, 0, Math.PI * 2));
-    d.fill(c => c.ellipse(320, 92, 52, 12, 0, 0, Math.PI * 2));
-    d.fill(c => {
-      c.moveTo(286, 92);
-      c.lineTo(296, 52);
-      c.lineTo(344, 52);
-      c.lineTo(354, 92);
-      c.closePath();
-    });
-  });
-
-  registerIll('flood', d => {
-    skyline(d, 156);
-    d.water(156);
-  });
-
-  registerIll('gull', d => {
-    d.band(200);
-    d.fill(c => c.rect(300, 154, 18, 58));
-    d.gull(250, 142, 1.35);
-  });
 
   const $ = id => document.getElementById(id);
   let app = null;
@@ -687,12 +408,9 @@
       app.appendChild(el('p', 'empty', 'Raf boş.'));
       return;
     }
+    showPlate(coverSrc(st));
     const card = el('article', 'card');
     card.appendChild(el('p', 'kicker', 'Bu haftanın hikayesi'));
-    const ill = document.createElement('canvas');
-    ill.className = 'ill';
-    card.appendChild(ill);
-    drawIll(ill, st, st.cover || 'watch');
     card.appendChild(el('h1', null, GAME.title));
     card.appendChild(el('h2', null, st.title));
     card.appendChild(el('p', 'prose', st.blurb || ''));
@@ -732,11 +450,8 @@
     const sc = sceneOf();
     if (!st || !sc) { goShelf(); return; }
     Sound.setMode(sc.sound || 'room');
+    showPlate(imageSrc(st, state.sceneId, sc));
     const card = el('article', 'card');
-    const ill = document.createElement('canvas');
-    ill.className = 'ill';
-    card.appendChild(ill);
-    drawIll(ill, st, sc.ill || 'watch');
     card.appendChild(el('p', 'kicker', st.title));
     if (sc.ending) card.appendChild(el('h2', 'endname', sc.endName));
     else card.appendChild(el('h2', null, sc.title));
@@ -835,26 +550,22 @@
     g.fillStyle = INK;
     g.textAlign = 'center';
     g.font = '500 34px "Iowan Old Style", Palatino, Georgia, "Liberation Serif", "Noto Serif", "Times New Roman", serif';
-    trackText(g, GAME.title.toLocaleUpperCase('tr'), W / 2, 168, 10);
-    const mark = document.createElement('canvas');
-    const pen = createPen(mark);
-    pen.watch(320, 150, 1.15);
-    g.drawImage(mark, (W - 360) / 2, 200, 360, 158);
+    trackText(g, GAME.title.toLocaleUpperCase('tr'), W / 2, 220, 10);
     g.strokeStyle = INK;
     g.lineWidth = 1;
     g.beginPath();
-    g.moveTo(180, 400);
-    g.lineTo(900, 400);
+    g.moveTo(180, 300);
+    g.lineTo(900, 300);
     g.stroke();
     g.fillStyle = INK;
     g.font = 'italic 500 48px "Iowan Old Style", Palatino, Georgia, "Liberation Serif", "Noto Serif", "Times New Roman", serif';
-    wrapText(g, st.title, W / 2, 490, 780, 60);
+    wrapText(g, st.title, W / 2, 420, 780, 60);
     g.fillStyle = RED;
     g.font = 'italic 500 84px "Iowan Old Style", Palatino, Georgia, "Liberation Serif", "Noto Serif", "Times New Roman", serif';
-    g.fillText(sc.endName, W / 2, 700);
+    g.fillText(sc.endName, W / 2, 640);
     g.fillStyle = INK;
     g.font = 'italic 400 36px "Iowan Old Style", Palatino, Georgia, "Liberation Serif", "Noto Serif", "Times New Roman", serif';
-    wrapText(g, sc.endBlurb || '', W / 2, 780, 760, 48);
+    wrapText(g, sc.endBlurb || '', W / 2, 730, 760, 48);
     g.strokeStyle = INK;
     g.beginPath();
     g.moveTo(180, 900);
@@ -900,10 +611,6 @@
     a.remove();
   }
 
-  function illExists(st, name) {
-    return !!((st.illustrations && st.illustrations[name]) || library[name]);
-  }
-
   function audit(st) {
     st = st || currentStory();
     const scenes = st.scenes;
@@ -922,7 +629,6 @@
       explored.add(sk);
       seen.add(id);
       const sc = scenes[id];
-      if (sc.ill && !illExists(st, sc.ill)) errors.push('ill ' + id + ' ' + sc.ill);
       const mode = sc.sound || 'room';
       if (['room', 'street', 'cistern', 'off'].indexOf(mode) < 0) errors.push('sound ' + id);
       if (sc.ending) { endingsHit.add(sc.ending); return; }
@@ -945,7 +651,6 @@
       if (!sc.ending && (!sc.text || (typeof sc.text === 'string' && sc.text.length < 40))) errors.push('short ' + id);
       if (sc.ending && (!sc.endName || !sc.endBlurb)) errors.push('end card ' + id);
     });
-    if (st.cover && !illExists(st, st.cover)) errors.push('ill cover ' + st.cover);
     const endings = Object.keys(scenes).filter(id => scenes[id].ending).map(id => ({
       id: scenes[id].ending,
       name: scenes[id].endName,
@@ -972,8 +677,8 @@
   global.Sarnic = {
     GAME: GAME,
     story: story,
-    ill: registerIll,
-    libraryNames() { return Object.keys(library); },
+    imageSrc: imageSrc,
+    coverSrc: coverSrc,
     boot: boot,
     audit: audit,
     Sound: Sound,
@@ -983,8 +688,6 @@
     buildCard: buildCard,
     shareText: shareText,
     xIntent: xIntent,
-    drawIll: drawIll,
-    createPen: createPen,
     setInstant(v) { global.__instant = !!v; },
     pick(i) {
       const sc = sceneOf();
